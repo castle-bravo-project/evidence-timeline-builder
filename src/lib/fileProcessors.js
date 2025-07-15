@@ -1,14 +1,59 @@
 // File processing utilities for Evidence Timeline Builder
 
+// File size limits (in bytes)
+const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+const MAX_TEXT_FILE_SIZE = 50 * 1024 * 1024 // 50MB for text files
+
+// Processing timeout (in milliseconds)
+const PROCESSING_TIMEOUT = 30000 // 30 seconds
+
+/**
+ * Create a timeout promise that rejects after specified time
+ */
+const createTimeout = (ms, fileName) => {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`File processing timeout: ${fileName} took longer than ${ms/1000} seconds to process`))
+    }, ms)
+  })
+}
+
+/**
+ * Validate file before processing
+ */
+const validateFile = (file) => {
+  if (!file || !file.name) {
+    throw new Error('Invalid file: File is missing or has no name')
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File too large: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+  }
+
+  if (file.size === 0) {
+    throw new Error(`Empty file: ${file.name} has no content`)
+  }
+
+  // Additional validation for text files
+  const extension = file.name.toLowerCase().split('.').pop()
+  const textExtensions = ['txt', 'log', 'csv', 'json', 'eml', 'msg']
+  if (textExtensions.includes(extension) && file.size > MAX_TEXT_FILE_SIZE) {
+    throw new Error(`Text file too large: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds maximum size of ${MAX_TEXT_FILE_SIZE / 1024 / 1024}MB for text files`)
+  }
+}
+
 /**
  * Extract EXIF data from image files
  */
 export const extractImageMetadata = async (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
+  validateFile(file)
+
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
         // Basic image metadata
         const metadata = {
           filename: file.name,
@@ -40,21 +85,35 @@ export const extractImageMetadata = async (file) => {
             category: 'media'
           })
         }
+
+        img.onerror = () => {
+          reject(new Error(`Failed to load image: ${file.name}`))
+        }
       }
+
+      reader.onerror = () => {
+        reject(new Error(`Failed to read image file: ${file.name}`))
+      }
+
       img.src = e.target.result
     }
     reader.readAsDataURL(file)
-  })
+  }),
+  createTimeout(PROCESSING_TIMEOUT, file.name)
+  ])
 }
 
 /**
  * Parse CSV files and extract timeline events
  */
 export const parseCSVFile = async (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
+  validateFile(file)
+
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
         const text = e.target.result
         const lines = text.split('\n').filter(line => line.trim())
         
@@ -121,18 +180,28 @@ export const parseCSVFile = async (file) => {
         reject(error)
       }
     }
+
+    reader.onerror = () => {
+      reject(new Error(`Failed to read CSV file: ${file.name}`))
+    }
+
     reader.readAsText(file)
-  })
+  }),
+  createTimeout(PROCESSING_TIMEOUT, file.name)
+  ])
 }
 
 /**
  * Parse JSON files and extract timeline events
  */
 export const parseJSONFile = async (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
+  validateFile(file)
+
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
         const data = JSON.parse(e.target.result)
         const events = []
         
@@ -160,8 +229,15 @@ export const parseJSONFile = async (file) => {
         reject(error)
       }
     }
+
+    reader.onerror = () => {
+      reject(new Error(`Failed to read JSON file: ${file.name}`))
+    }
+
     reader.readAsText(file)
-  })
+  }),
+  createTimeout(PROCESSING_TIMEOUT, file.name)
+  ])
 }
 
 /**
@@ -226,10 +302,13 @@ const extractEventFromObject = (obj, filename, index) => {
  * Process email files (simplified - for .eml files)
  */
 export const parseEmailFile = async (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
+  validateFile(file)
+
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
         const content = e.target.result
         const lines = content.split('\n')
         
@@ -277,18 +356,28 @@ export const parseEmailFile = async (file) => {
         reject(error)
       }
     }
+
+    reader.onerror = () => {
+      reject(new Error(`Failed to read email file: ${file.name}`))
+    }
+
     reader.readAsText(file)
-  })
+  }),
+  createTimeout(PROCESSING_TIMEOUT, file.name)
+  ])
 }
 
 /**
  * Process system log files
  */
 export const parseLogFile = async (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
+  validateFile(file)
+
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
         const content = e.target.result
         const lines = content.split('\n').filter(line => line.trim())
         const events = []
@@ -332,47 +421,68 @@ export const parseLogFile = async (file) => {
         reject(error)
       }
     }
+
+    reader.onerror = () => {
+      reject(new Error(`Failed to read log file: ${file.name}`))
+    }
+
     reader.readAsText(file)
-  })
+  }),
+  createTimeout(PROCESSING_TIMEOUT, file.name)
+  ])
 }
 
 /**
  * Main file processor - determines file type and calls appropriate parser
  */
 export const processFile = async (file) => {
-  const extension = file.name.toLowerCase().split('.').pop()
-  const mimeType = file.type.toLowerCase()
-  
   try {
+    validateFile(file)
+
+    const extension = file.name.toLowerCase().split('.').pop()
+    const mimeType = file.type.toLowerCase()
+
+    console.log(`Processing file: ${file.name} (${extension}, ${(file.size / 1024).toFixed(1)}KB)`)
+
+    const startTime = Date.now()
+    let result
+
     switch (extension) {
       case 'csv':
-        return await parseCSVFile(file)
-      
+        result = await parseCSVFile(file)
+        break
+
       case 'json':
-        return await parseJSONFile(file)
-      
+        result = await parseJSONFile(file)
+        break
+
       case 'eml':
       case 'msg':
-        return await parseEmailFile(file)
-      
+        result = await parseEmailFile(file)
+        break
+
       case 'log':
       case 'txt':
         if (file.name.toLowerCase().includes('log')) {
-          return await parseLogFile(file)
+          result = await parseLogFile(file)
+        } else {
+          // Handle plain text files
+          result = await parseLogFile(file) // Use log parser for text files
         }
-        // Fall through to default
-        
+        break
+
       case 'jpg':
       case 'jpeg':
       case 'png':
       case 'gif':
       case 'bmp':
       case 'webp':
-        return [await extractImageMetadata(file)]
-      
+        result = [await extractImageMetadata(file)]
+        break
+
       default:
         // Generic file processing
-        return [{
+        result = [{
           id: `file-${file.name}-${Date.now()}`,
           title: `File: ${file.name}`,
           timestamp: file.lastModified || Date.now(),
@@ -386,6 +496,11 @@ export const processFile = async (file) => {
           }
         }]
     }
+
+    const processingTime = Date.now() - startTime
+    console.log(`Successfully processed ${file.name} in ${processingTime}ms, generated ${result.length} events`)
+
+    return result
   } catch (error) {
     console.error('Error processing file:', error)
     // Return a basic event even if processing fails

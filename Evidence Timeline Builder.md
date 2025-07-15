@@ -1,8 +1,26 @@
 # Evidence Timeline Builder
 
-A comprehensive web application for creating interactive timelines from evidence files with advanced visualization, filtering, and export capabilities.
+A comprehensive web application for creating interactive timelines from evidence files with advanced visualization, filtering, and export capabilities. Perfect for digital forensics, legal investigations, incident response, and any scenario requiring chronological analysis of evidence.
 
-![Evidence Timeline Builder](https://img.shields.io/badge/React-18.3.1-blue) ![Vite](https://img.shields.io/badge/Vite-6.3.5-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4.16-blue)
+![Evidence Timeline Builder](https://img.shields.io/badge/React-19.1.0-blue) ![Vite](https://img.shields.io/badge/Vite-6.3.5-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4.17-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+
+## 🌐 Live Demo
+
+**Try it now:** [https://castle-bravo-project.github.io/evidence-timeline-builder/](https://castle-bravo-project.github.io/evidence-timeline-builder/)
+
+## 📖 Table of Contents
+
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Installation](#-installation)
+- [Usage Guide](#-usage-guide)
+- [File Format Support](#-file-format-support)
+- [Export Options](#-export-options)
+- [Advanced Features](#-advanced-features)
+- [API Reference](#-api-reference)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🚀 Features
 

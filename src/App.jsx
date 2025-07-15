@@ -79,7 +79,7 @@ const EventDetails = ({ event, onClose, onDelete }) => {
 }
 
 // File upload component
-const FileUpload = ({ onFileUpload, isProcessing, processingStatus }) => {
+const FileUpload = ({ onFileUpload, isProcessing, processingStatus, onCancelUpload }) => {
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (e) => {
@@ -127,18 +127,31 @@ const FileUpload = ({ onFileUpload, isProcessing, processingStatus }) => {
           onClick={() => !isProcessing && fileInputRef.current?.click()}
         >
           {isProcessing ? (
-            <Loader2 className="w-12 h-12 mx-auto mb-4 text-accent animate-spin" />
+            <div className="flex flex-col items-center">
+              <Loader2 className="w-12 h-12 mx-auto mb-4 text-accent animate-spin" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onCancelUpload}
+                className="mb-2"
+              >
+                Cancel Upload
+              </Button>
+            </div>
           ) : (
             <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           )}
-          
+
           <p className="text-sm text-muted-foreground mb-2">
             {isProcessing ? 'Processing files...' : 'Drop files here or click to browse'}
           </p>
           <p className="text-xs text-muted-foreground">
             Supports: CSV, JSON, Images, EML, Logs, and more
           </p>
-          
+          <p className="text-xs text-muted-foreground mt-1">
+            Max file size: 100MB (50MB for text files)
+          </p>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -218,43 +231,92 @@ function App() {
   const [filter, setFilter] = useState('all')
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState(null)
+  const [abortController, setAbortController] = useState(null)
   const [showConnections, setShowConnections] = useState(false)
   const [timeRange, setTimeRange] = useState('all')
 
+  const handleCancelUpload = useCallback(() => {
+    if (abortController) {
+      abortController.abort()
+      setAbortController(null)
+      setIsProcessing(false)
+      setProcessingStatus({
+        success: 0,
+        errors: [{ file: 'Upload', error: 'Upload cancelled by user' }]
+      })
+
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        setProcessingStatus(null)
+      }, 3000)
+    }
+  }, [abortController])
+
   const handleFileUpload = useCallback(async (files) => {
     console.log('handleFileUpload called with files:', files)
+
+    // Create new abort controller
+    const controller = new AbortController()
+    setAbortController(controller)
     setIsProcessing(true)
     setProcessingStatus(null)
-    
+
     try {
       console.log('Starting file processing...')
-      const result = await processFiles(files)
+
+      // Add timeout and cancellation support
+      const timeoutPromise = new Promise((_, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('File processing timeout - operation took too long'))
+        }, 60000) // 60 second timeout
+
+        controller.signal.addEventListener('abort', () => {
+          clearTimeout(timeout)
+          reject(new Error('Upload cancelled'))
+        })
+      })
+
+      const processingPromise = processFiles(files)
+
+      const result = await Promise.race([processingPromise, timeoutPromise])
+
+      // Check if operation was cancelled
+      if (controller.signal.aborted) {
+        return
+      }
+
       console.log('File processing result:', result)
-      
+
       // Add successfully processed events to timeline
       if (result.events.length > 0) {
         console.log('Adding events to timeline:', result.events.length)
         setEvents(prev => [...prev, ...result.events])
       }
-      
+
       // Show processing status
       setProcessingStatus({
         success: result.events.length,
         errors: result.errors
       })
-      
+
       // Clear status after 5 seconds
       setTimeout(() => {
         setProcessingStatus(null)
       }, 5000)
-      
+
     } catch (error) {
+      if (error.message === 'Upload cancelled') {
+        console.log('Upload was cancelled')
+        return
+      }
+
       console.error('Error processing files:', error)
       setProcessingStatus({
         success: 0,
         errors: [{ file: 'Unknown', error: error.message }]
       })
     } finally {
+      setAbortController(null)
       setIsProcessing(false)
     }
   }, [])
@@ -289,7 +351,16 @@ function App() {
     setShowConnections(prev => !prev)
   }, [])
 
-  const filteredEvents = events.filter(event => 
+  const handleClearData = useCallback(() => {
+    setEvents([])
+    setSelectedEvent(null)
+    setFilter('all')
+    setTimeRange('all')
+    setZoomLevel(1)
+    setShowConnections(false)
+  }, [])
+
+  const filteredEvents = events.filter(event =>
     filter === 'all' || event.category === filter
   )
 
@@ -316,6 +387,7 @@ function App() {
           onToggleConnections={handleToggleConnections}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
+          onClearData={handleClearData}
         />
 
         {/* Main content */}
@@ -335,10 +407,11 @@ function App() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <FileUpload 
-              onFileUpload={handleFileUpload} 
+            <FileUpload
+              onFileUpload={handleFileUpload}
               isProcessing={isProcessing}
               processingStatus={processingStatus}
+              onCancelUpload={handleCancelUpload}
             />
             
             {selectedEvent && (

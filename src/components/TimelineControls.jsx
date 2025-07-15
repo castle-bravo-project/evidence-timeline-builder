@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.j
 import { Slider } from '@/components/ui/slider.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.jsx'
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  Filter, 
+import { ConfirmationDialog } from '@/components/ui/dialog.jsx'
+import {
+  ZoomIn,
+  ZoomOut,
+  Filter,
   Calendar,
   Clock,
   RotateCcw,
@@ -15,22 +16,25 @@ import {
   Eye,
   EyeOff,
   Link,
-  Unlink
+  Unlink,
+  Trash2
 } from 'lucide-react'
 
-const TimelineControls = ({ 
-  zoomLevel, 
-  onZoomChange, 
-  filter, 
-  onFilterChange, 
+const TimelineControls = ({
+  zoomLevel,
+  onZoomChange,
+  filter,
+  onFilterChange,
   events,
   onResetView,
   showConnections,
   onToggleConnections,
   timeRange,
-  onTimeRangeChange
+  onTimeRangeChange,
+  onClearData
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   
   const categoryStats = {
     all: events.length,
@@ -143,7 +147,7 @@ const TimelineControls = ({
           {showConnections ? <Unlink className="w-4 h-4" /> : <Link className="w-4 h-4" />}
           {showConnections ? 'Hide' : 'Show'} Links
         </Button>
-        
+
         <Button
           variant="outline"
           size="sm"
@@ -152,6 +156,17 @@ const TimelineControls = ({
         >
           <RotateCcw className="w-4 h-4" />
           Reset View
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowClearConfirm(true)}
+          className="gap-2 text-destructive hover:text-destructive"
+          disabled={events.length === 0}
+        >
+          <Trash2 className="w-4 h-4" />
+          Clear Data
         </Button>
       </div>
 
@@ -171,6 +186,18 @@ const TimelineControls = ({
           </div>
         )}
       </div>
+
+      {/* Clear Data Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showClearConfirm}
+        onOpenChange={setShowClearConfirm}
+        title="Clear All Data"
+        description={`Are you sure you want to clear all ${events.length} events from the timeline? This action cannot be undone.`}
+        onConfirm={onClearData}
+        confirmText="Clear All Data"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   )
 }
