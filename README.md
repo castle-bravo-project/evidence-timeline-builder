@@ -2,8 +2,7 @@
 
 A comprehensive web application for creating interactive timelines from evidence files with advanced visualization, filtering, and export capabilities. Perfect for digital forensics, legal investigations, incident response, and any scenario requiring chronological analysis of evidence.
 
-![Evidence Timeline Builder](https://img.shields.io/badge/React-19.1.0-blue) ![Vite](https://img.shields.io/badge/Vite-6.3.5-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4.17-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
-
+![Evidence Timeline Builder](https://img.shields.io/badge/React-19.1.0-blue) ![Vite](https://img.shields.io/badge/Vite-6.3.5-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4.17-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen) ![Static Badge](https://img.shields.io/badge/Validation-Pending-red) 
 ## 🌐 Live Demo
 
 **Try it now:** [https://castle-bravo-project.github.io/evidence-timeline-builder/](https://castle-bravo-project.github.io/evidence-timeline-builder/)
