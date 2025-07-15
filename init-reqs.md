@@ -1,4 +1,4 @@
-## 1. Evidence Timeline Builder
+## Evidence Timeline Builder
 
 ### Core Functionality
 - **Interactive Timeline Creation**: Drag-and-drop interface for positioning evidence chronologically
